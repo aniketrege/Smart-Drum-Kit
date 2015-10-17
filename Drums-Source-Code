@@ -1,0 +1,185 @@
+  //lcd.print("C D E F G A B C");
+ // lcd.setCursor(0, 1);
+
+#define kick 0x2B //G3
+#define snare 0x2F //B3
+#define hat 0x29 //F3
+#define cymbal 0x27 //D#3
+
+#define C4 0x30
+#define Cs4 0x31
+#define D4 0x32
+#define E4 0x34
+#define F4 0x35
+#define G4 0x37
+#define A4a 0x39
+#define B4 0x3B
+
+#define C5 0x3C
+#define D5 0x3E
+#define E5 0x40
+#define F5 0x41
+#define G5 0x43
+#define A5a 0x45
+#define As5 0x46
+#define B5 0x47
+#define C6 0x48
+#define Cs6 0x49
+
+#define pin1 3
+#define pin2 4
+#define pin3 5
+#define pin4 6 //input pins from switches
+
+#define led1 8
+#define led2 9
+#define led3 10
+#define led4 12 //LEDs for LED sync
+
+#define bg_delay 0
+#define sm_delay 0
+/*
+#define RS A1
+#define EN A0
+#define LD4 A2
+#define LD5 A3
+#define LD6 A4
+#define LD7 A5
+*/
+int vel=0x55;
+const int size_of_i = 2;
+int i=0;
+int status[4]={0,0,0,0}; //a flag to ensure note doesnt keep switching on and off rapidly through the infinite loop 
+
+#include <LiquidCrystal.h> //for the LCD display, optional
+
+LiquidCrystal lcd(A1, A0, A2, A3, A4, A5);
+
+void setup()
+{
+  pinMode(pin1, INPUT_PULLUP);
+  pinMode(pin2, INPUT_PULLUP);
+  pinMode(pin3, INPUT_PULLUP);
+  pinMode(pin4, INPUT_PULLUP);
+  
+ 
+ pinMode(11, INPUT_PULLUP);
+
+  Serial.begin(9600); //set a decent baud rate. Make sure to match in Hairless MIDI settings 
+  lcd.begin(16, 2);
+}
+//=====================================================================
+void loop() 
+{
+  if (digitalRead(11) == LOW)                      //Interface LCD here!!
+  {
+    while(digitalRead(11) == LOW);
+    
+    lcd.print(i);
+    ++i;
+    if (i>=size_of_i) i=0;
+    lcd.setCursor(0, 0);
+   if (i==0) 
+     {lcd.clear();
+      lcd.print("Drum kit- KSHC");
+     } 
+   else if (i==1)
+   { lcd.clear();
+     lcd.print("Channeled Kit");
+   }    
+    }
+//====================================================================
+  if (digitalRead(pin1) == LOW) //leave 3 pins and connect
+  {
+    if (status[0]!=1)
+      {
+        noteOn(0x90,kick,vel); //switch the kick note on
+        digitalWrite(led1,HIGH); //first LED to sync to first button
+        digitalWrite(led2,LOW);
+        digitalWrite(led3,LOW);
+        digitalWrite(led4,LOW);
+      }
+      status[0]=1;
+      delay(bg_delay);
+  }
+  if (digitalRead(pin1)==HIGH && status[0]==1 )
+  {  
+      noteOn(0x80,kick,vel); //switch the kick note off
+      delay(sm_delay);
+      status[0]=0;
+   }
+//---------------------------------------------------------------------   
+//====================================================================
+  if (digitalRead(pin2) == LOW) //same as previous switch
+  {
+    if (status[1]!=1){
+      noteOn(0x91,snare,vel);
+        digitalWrite(led1,LOW);
+        digitalWrite(led2,HIGH);
+        digitalWrite(led3,LOW);
+        digitalWrite(led4,LOW);
+    }
+    status[1]=1;
+    delay(bg_delay);
+  }
+  if (digitalRead(pin2)==HIGH && status[1]==1 )
+  {  
+      noteOn(0x81,snare,vel);
+      delay(sm_delay);
+      status[1]=0;
+   }
+//---------------------------------------------------------------------   
+//====================================================================
+  if (digitalRead(pin3) == LOW) //same as previous switch
+  {
+    if (status[2]!=1)
+    {
+      noteOn(0x92,hat,vel);
+      digitalWrite(led1,LOW);
+        digitalWrite(led2,LOW);
+        digitalWrite(led3,HIGH);
+        digitalWrite(led4,LOW);
+    }
+    status[2]=1;
+    delay(bg_delay);
+    
+  }
+  if (digitalRead(pin3)==HIGH && status[2]==1 )
+  {  
+      noteOn(0x82,hat,vel);
+      delay(sm_delay);
+      status[2]=0;
+   }
+//---------------------------------------------------------------------   
+//====================================================================
+  if (digitalRead(pin4) == LOW) //same as previous switch
+  {
+    if (status[3]!=1)
+      {
+        noteOn(0x93,cymbal,vel);
+        digitalWrite(led1,LOW);
+        digitalWrite(led2,LOW);
+        digitalWrite(led3,LOW);
+        digitalWrite(led4,HIGH);
+      }
+      status[3]=1;
+      delay(bg_delay);
+  }
+  if (digitalRead(pin4)==HIGH && status[3]==1 )
+  {  
+      noteOn(0x83,cymbal,vel);
+      delay(sm_delay);
+      status[3]=0;
+   }
+//---------------------------------------------------------------------   
+ 
+     
+}
+
+void noteOn(int cmd, int pitch, int velocity) { //3 bytes of data needed for all MIDI messages. 1 status byte and 2 data bytes
+  Serial.write(cmd);
+  Serial.write(pitch);
+  Serial.write(velocity);
+
+}
+//_______________________________________________________________________
